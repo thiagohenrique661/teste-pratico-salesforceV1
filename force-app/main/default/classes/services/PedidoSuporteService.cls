@@ -1,8 +1,4 @@
-/**
- * @description Service responsável pelas regras de negócio
- *              do objeto PedidoSuporte__c.
- *              Camada de domínio (Domain / Service Layer).
- */
+// Regra de negócio para validação dos pedidos e diferentes cenários de status
 public with sharing class PedidoSuporteService {
 
     private static final String PRIORIDADE_ALTA   = 'Alta';
@@ -13,18 +9,22 @@ public with sharing class PedidoSuporteService {
     private static final String MSG_ERRO_CANCELAMENTO =
         'Não é permitido cancelar um pedido que já está resolvido.';
 
-    /**
-     * @description Valida que pedidos de alta prioridade só podem ser resolvidos
-     *              se possuírem ao menos uma interação do tipo Agente.
-     *              Deve ser chamado no contexto before update.
-     * @param newList  Trigger.new
-     * @param oldMap   Trigger.oldMap
-     */
-    public static void validarResolucaoAltaPrioridade(
+    private final IInteracaoSelector interacaoSelector;
+
+    public PedidoSuporteService() {
+        this.interacaoSelector = new InteracaoSelector();
+    }
+
+    @TestVisible
+    private PedidoSuporteService(IInteracaoSelector interacaoSelector) {
+        this.interacaoSelector = interacaoSelector;
+    }
+
+
+    public void validarResolucaoAltaPrioridade(
         List<PedidoSuporte__c> newList,
         Map<Id, PedidoSuporte__c> oldMap
     ) {
-        // 1. Identificar somente pedidos que se enquadram na regra (bulk-safe)
         Set<Id> pedidosParaValidar = new Set<Id>();
 
         for (PedidoSuporte__c pedido : newList) {
@@ -44,17 +44,14 @@ public with sharing class PedidoSuporteService {
             return;
         }
 
-        // 2. Consultar interações via Selector (1 única query para todos os registros)
         List<Interacao__c> interacoesAgente =
-            InteracaoSelector.getInteracoesAgentePorPedidos(pedidosParaValidar);
+            this.interacaoSelector.getInteracoesAgentePorPedidos(pedidosParaValidar);
 
-        // 3. Mapear quais pedidos possuem ao menos uma interação de agente
         Set<Id> pedidosComAgente = new Set<Id>();
         for (Interacao__c interacao : interacoesAgente) {
             pedidosComAgente.add(interacao.PedidoSuporte__c);
         }
 
-        // 4. Adicionar erro nos registros que violam a regra
         for (PedidoSuporte__c pedido : newList) {
             if (pedidosParaValidar.contains(pedido.Id) &&
                 !pedidosComAgente.contains(pedido.Id)) {
@@ -63,13 +60,7 @@ public with sharing class PedidoSuporteService {
         }
     }
 
-    /**
-     * @description Impede que um pedido já resolvido seja alterado para Cancelado.
-     *              Deve ser chamado no contexto before update.
-     * @param newList  Trigger.new
-     * @param oldMap   Trigger.oldMap
-     */
-    public static void validarCancelamentoResolvido(
+    public void validarCancelamentoResolvido(
         List<PedidoSuporte__c> newList,
         Map<Id, PedidoSuporte__c> oldMap
     ) {

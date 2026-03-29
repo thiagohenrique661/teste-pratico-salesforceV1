@@ -1,14 +1,6 @@
-/**
- * @description Test class para PedidoSuporteTrigger.
- *              Cobre a regra: pedidos Alta prioridade só podem ser Resolvidos
- *              se possuírem ao menos uma Interacao__c do tipo Agente.
- */
 @IsTest
 private class PedidoSuporteTriggerTest {
 
-    // ─────────────────────────────────────────────
-    // Cenário 1: DEVE bloquear — Alta prioridade, sem interação Agente
-    // ─────────────────────────────────────────────
     @IsTest
     static void quandoAltaPrioridadeSemInteracaoAgente_deveBloquear() {
         PedidoSuporte__c pedido = criarPedido('Alta', 'Em Atendimento');
@@ -27,9 +19,6 @@ private class PedidoSuporteTriggerTest {
         );
     }
 
-    // ─────────────────────────────────────────────
-    // Cenário 2: DEVE permitir — Alta prioridade, com interação Agente
-    // ─────────────────────────────────────────────
     @IsTest
     static void quandoAltaPrioridadeComInteracaoAgente_devePermitir() {
         PedidoSuporte__c pedido = criarPedido('Alta', 'Em Atendimento');
@@ -51,9 +40,6 @@ private class PedidoSuporteTriggerTest {
         Assert.isTrue(resultado.isSuccess(), 'A atualização deveria ter sido permitida.');
     }
 
-    // ─────────────────────────────────────────────
-    // Cenário 3: DEVE permitir — Baixa prioridade, sem interação Agente
-    // ─────────────────────────────────────────────
     @IsTest
     static void quandoBaixaPrioridadeSemInteracaoAgente_devePermitir() {
         PedidoSuporte__c pedido = criarPedido('Baixa', 'Em Atendimento');
@@ -68,9 +54,6 @@ private class PedidoSuporteTriggerTest {
         Assert.isTrue(resultado.isSuccess(), 'Pedidos de baixa prioridade não devem ser bloqueados.');
     }
 
-    // ─────────────────────────────────────────────
-    // Cenário 4: DEVE permitir — Alta prioridade, status não muda para Resolvido
-    // ─────────────────────────────────────────────
     @IsTest
     static void quandoAltaPrioridadeStatusNaoMudaParaResolvido_devePermitir() {
         PedidoSuporte__c pedido = criarPedido('Alta', 'Em Atendimento');
@@ -85,14 +68,11 @@ private class PedidoSuporteTriggerTest {
         Assert.isTrue(resultado.isSuccess(), 'Mudança para status diferente de Resolvido não deve ser bloqueada.');
     }
 
-    // ─────────────────────────────────────────────
-    // Cenário 5: Bulk — múltiplos registros, mix de válidos e inválidos
-    // ─────────────────────────────────────────────
     @IsTest
     static void quandoBulkComMixDeRegistros_deveBloquearApenasPoliticaViolada() {
-        // Pedido 1: Alta, sem agente → deve bloquear
+        // Pedido 1: Alta, sem agente deve bloquear
         PedidoSuporte__c pedidoSemAgente = criarPedido('Alta', 'Em Atendimento');
-        // Pedido 2: Alta, com agente → deve passar
+        // Pedido 2: Alta, com agente deve passar
         PedidoSuporte__c pedidoComAgente = criarPedido('Alta', 'Em Atendimento');
 
         insert new List<PedidoSuporte__c>{ pedidoSemAgente, pedidoComAgente };
@@ -117,9 +97,6 @@ private class PedidoSuporteTriggerTest {
         Assert.isTrue(resultados[1].isSuccess(),  'Pedido com agente deveria ser permitido.');
     }
 
-    // ─────────────────────────────────────────────
-    // Cenário 6: DEVE bloquear — Resolvido tentando ir para Cancelado
-    // ─────────────────────────────────────────────
     @IsTest
     static void quandoResolvidoTentaCancelar_deveBloquear() {
         PedidoSuporte__c pedido = criarPedido('Baixa', 'Resolvido');
@@ -138,9 +115,6 @@ private class PedidoSuporteTriggerTest {
         );
     }
 
-    // ─────────────────────────────────────────────
-    // Cenário 7: DEVE permitir — Em Atendimento tentando ir para Cancelado
-    // ─────────────────────────────────────────────
     @IsTest
     static void quandoEmAtendimentoTentaCancelar_devePermitir() {
         PedidoSuporte__c pedido = criarPedido('Baixa', 'Em Atendimento');
@@ -155,9 +129,6 @@ private class PedidoSuporteTriggerTest {
         Assert.isTrue(resultado.isSuccess(), 'Cancelamento de pedido Em Atendimento deveria ser permitido.');
     }
 
-    // ─────────────────────────────────────────────
-    // Helper
-    // ─────────────────────────────────────────────
     private static PedidoSuporte__c criarPedido(String prioridade, String status) {
         return new PedidoSuporte__c(
             Prioridade__c = prioridade,

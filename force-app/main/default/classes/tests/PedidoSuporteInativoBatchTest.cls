@@ -1,12 +1,6 @@
-/**
- * @description Test class para PedidoSuporteInativoBatch e PedidoSuporteInativoSchedulable.
- */
 @IsTest
 private class PedidoSuporteInativoBatchTest {
 
-    // ─────────────────────────────────────────────
-    // Setup compartilhado
-    // ─────────────────────────────────────────────
     @TestSetup
     static void setup() {
         Account conta = new Account(
@@ -22,9 +16,6 @@ private class PedidoSuporteInativoBatchTest {
         insert contato;
     }
 
-    // ─────────────────────────────────────────────
-    // Cenário 1: Pedido inativo há mais de 3 dias → deve atualizar status
-    // ─────────────────────────────────────────────
     @IsTest
     static void quandoPedidoInativoHaMaisDe3Dias_deveAtualizarStatus() {
         Account conta = [SELECT Id FROM Account LIMIT 1];
@@ -45,9 +36,7 @@ private class PedidoSuporteInativoBatchTest {
             'Status deveria ter sido atualizado para Aguardando Cliente.');
     }
 
-    // ─────────────────────────────────────────────
-    // Cenário 2: Pedido inativo há menos de 3 dias → NÃO deve atualizar
-    // ─────────────────────────────────────────────
+
     @IsTest
     static void quandoPedidoAtivoNosUltimos3Dias_naoDeveAtualizar() {
         Account conta = [SELECT Id FROM Account LIMIT 1];
@@ -68,9 +57,6 @@ private class PedidoSuporteInativoBatchTest {
             'Status não deveria ter sido alterado para pedido recente.');
     }
 
-    // ─────────────────────────────────────────────
-    // Cenário 3: Pedido Resolvido → NÃO deve ser processado pelo batch
-    // ─────────────────────────────────────────────
     @IsTest
     static void quandoPedidoResolvido_naoDeveSerProcessado() {
         Account conta = [SELECT Id FROM Account LIMIT 1];
@@ -91,9 +77,6 @@ private class PedidoSuporteInativoBatchTest {
             'Pedido Resolvido não deve ser alterado pelo batch.');
     }
 
-    // ─────────────────────────────────────────────
-    // Cenário 4: Pedido Cancelado → NÃO deve ser processado pelo batch
-    // ─────────────────────────────────────────────
     @IsTest
     static void quandoPedidoCancelado_naoDeveSerProcessado() {
         Account conta = [SELECT Id FROM Account LIMIT 1];
@@ -114,9 +97,6 @@ private class PedidoSuporteInativoBatchTest {
             'Pedido Cancelado não deve ser alterado pelo batch.');
     }
 
-    // ─────────────────────────────────────────────
-    // Cenário 5: Schedulable executa sem erro
-    // ─────────────────────────────────────────────
     @IsTest
     static void quandoAgendado_deveExecutarSemErro() {
         Test.startTest();
@@ -130,9 +110,6 @@ private class PedidoSuporteInativoBatchTest {
         Assert.isNotNull(jobId, 'O job agendado deveria retornar um Id.');
     }
 
-    // ─────────────────────────────────────────────
-    // Cenário 6: Bulk — 10 pedidos inativos → todos atualizados
-    // ─────────────────────────────────────────────
     @IsTest
     static void quandoBulkDePedidosInativos_todosDevemSerAtualizados() {
         Account conta = [SELECT Id FROM Account LIMIT 1];

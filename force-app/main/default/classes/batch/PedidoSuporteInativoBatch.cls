@@ -1,46 +1,36 @@
-/**
- * @description Batch Apex responsável por identificar Pedidos de Suporte
- *              sem interação há mais de 3 dias, atualizar o status para
- *              "Aguardando Cliente" e notificar o cliente por e-mail.
- *
- *              Implementa Database.Stateful para acumular contadores
- *              entre os chunks de execute().
- *
- *              Para executar manualmente via Developer Console:
- *                Database.executeBatch(new PedidoSuporteInativoBatch(), 200);
- *
- *              Para agendar, use PedidoSuporteInativoSchedulable.
- */
+// Rotina para identificar pedidos inativos
 public with sharing class PedidoSuporteInativoBatch
         implements Database.Batchable<SObject>, Database.Stateful {
 
-    // ─── Constantes ───────────────────────────────────────────────────────────
     private static final Integer DIAS_INATIVIDADE  = 3;
     private static final String  STATUS_AGUARDANDO = 'Aguardando Cliente';
 
     private static final String ASSUNTO_EMAIL =
         'Seu pedido de suporte será encerrado em breve por inatividade';
 
-    // ─── Contadores (Database.Stateful) ───────────────────────────────────────
+    private IPedidoSuporteSelector pedidoSelector;
+
     @TestVisible private Integer totalAtualizados = 0;
     @TestVisible private Integer totalEmailsEnviados = 0;
     @TestVisible private Integer totalErros = 0;
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // START — Delega a query ao Selector (clean arch)
-    // ─────────────────────────────────────────────────────────────────────────
-    public Database.QueryLocator start(Database.BatchableContext ctx) {
-        return PedidoSuporteSelector.getQueryLocatorInativos(DIAS_INATIVIDADE);
+    public PedidoSuporteInativoBatch() {
+        this.pedidoSelector = new PedidoSuporteSelector();
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // EXECUTE — Processa cada chunk
-    // ─────────────────────────────────────────────────────────────────────────
+    @TestVisible
+    private PedidoSuporteInativoBatch(IPedidoSuporteSelector pedidoSelector) {
+        this.pedidoSelector = pedidoSelector;
+    }
+
+    public Database.QueryLocator start(Database.BatchableContext ctx) {
+        return this.pedidoSelector.getQueryLocatorInativos(DIAS_INATIVIDADE);
+    }
+
     public void execute(Database.BatchableContext ctx, List<PedidoSuporte__c> pedidos) {
         List<PedidoSuporte__c>          pedidosParaAtualizar = new List<PedidoSuporte__c>();
         List<Messaging.SingleEmailMessage> emailsParaEnviar  = new List<Messaging.SingleEmailMessage>();
 
-        // Coleta IDs das contas do chunk e busca e-mail do Contact principal (1 query)
         Set<Id> contaIds = new Set<Id>();
         for (PedidoSuporte__c pedido : pedidos) {
             if (pedido.Cliente__c != null) {
@@ -48,7 +38,7 @@ public with sharing class PedidoSuporteInativoBatch
             }
         }
         Map<Id, String> emailPorConta =
-            PedidoSuporteSelector.getEmailContatoPrincipalPorContas(contaIds);
+            this.pedidoSelector.getEmailContatoPrincipalPorContas(contaIds);
 
         for (PedidoSuporte__c pedido : pedidos) {
             pedido.Status__c = STATUS_AGUARDANDO;
@@ -60,7 +50,6 @@ public with sharing class PedidoSuporteInativoBatch
             }
         }
 
-        // DML com allOrNone=false para não abortar o batch por falha pontual
         if (!pedidosParaAtualizar.isEmpty()) {
             List<Database.SaveResult> resultados =
                 Database.update(pedidosParaAtualizar, false);
@@ -78,7 +67,6 @@ public with sharing class PedidoSuporteInativoBatch
             }
         }
 
-        // Envio de e-mails com allOrNone=false
         if (!emailsParaEnviar.isEmpty()) {
             List<Messaging.SendEmailResult> emailResultados =
                 Messaging.sendEmail(emailsParaEnviar, false);
@@ -94,9 +82,6 @@ public with sharing class PedidoSuporteInativoBatch
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // FINISH — Log consolidado ao final do job
-    // ─────────────────────────────────────────────────────────────────────────
     public void finish(Database.BatchableContext ctx) {
         System.debug(LoggingLevel.INFO,
             String.format(
@@ -106,9 +91,6 @@ public with sharing class PedidoSuporteInativoBatch
         );
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Método privado — monta o e-mail de inatividade
-    // ─────────────────────────────────────────────────────────────────────────
     private Messaging.SingleEmailMessage montarEmail(
         PedidoSuporte__c pedido,
         String destinatario
@@ -129,7 +111,7 @@ public with sharing class PedidoSuporteInativoBatch
         email.setToAddresses(new List<String>{ destinatario });
         email.setSubject(ASSUNTO_EMAIL);
         email.setPlainTextBody(corpo);
-        email.setSaveAsActivity(false); // Não criar Activity para não poluir histórico
+        email.setSaveAsActivity(false);
 
         return email;
     }

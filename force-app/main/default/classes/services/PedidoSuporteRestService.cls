@@ -1,19 +1,9 @@
-/**
- * @description Service responsável pela lógica de negócio da API REST
- *              de criação de PedidoSuporte__c.
- *              Camada de domínio (Domain / Service Layer).
- */
+// Criação de pedido pelo endpoint e validação do payload
 public with sharing class PedidoSuporteRestService {
 
     private static final String STATUS_NOVO = 'Novo';
 
-    /**
-     * @description Valida o payload, cria o PedidoSuporte__c e retorna o Id.
-     * @param payload DTO centralizado em PedidoSuporteRestDTO
-     * @return Id do registro criado (String)
-     * @throws PedidoSuporteRestDTO.ValidationException para dados inválidos
-     */
-    public static String criarPedido(
+    public String criarPedido(
         PedidoSuporteRestDTO.PedidoSuporteRequest payload
     ) {
         validarPayload(payload);
@@ -30,8 +20,7 @@ public with sharing class PedidoSuporteRestService {
         return pedido.Id;
     }
 
-    // ─── Validações de entrada ────────────────────────────────────────────────
-    private static void validarPayload(
+    private void validarPayload(
         PedidoSuporteRestDTO.PedidoSuporteRequest payload
     ) {
         if (payload == null) {
@@ -51,7 +40,7 @@ public with sharing class PedidoSuporteRestService {
         }
     }
 
-    private static Boolean isValidId(String rawId) {
+    private Boolean isValidId(String rawId) {
         try {
             Id validId = (Id) rawId;
             return validId != null;

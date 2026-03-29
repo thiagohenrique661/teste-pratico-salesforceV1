@@ -1,22 +1,12 @@
-/**
- * @description Test class para PedidoSuporteRestResource e PedidoSuporteRestService.
- *              Simula chamadas REST usando RestContext para isolar o endpoint.
- */
 @IsTest
 private class PedidoSuporteRestResourceTest {
 
-    // ─────────────────────────────────────────────
-    // Setup compartilhado
-    // ─────────────────────────────────────────────
     @TestSetup
     static void setup() {
         Account conta = new Account(Name = 'Cliente API Teste');
         insert conta;
     }
 
-    // ─────────────────────────────────────────────
-    // Cenário 1: POST válido → 201 + pedidoId
-    // ─────────────────────────────────────────────
     @IsTest
     static void quandoPayloadValido_deveRetornar201ComPedidoId() {
         Account conta = [SELECT Id FROM Account LIMIT 1];
@@ -53,9 +43,6 @@ private class PedidoSuporteRestResourceTest {
         Assert.isNotNull(pedidoCriado.UltimaInteracao__c, 'UltimaInteracao__c deve ser preenchida.');
     }
 
-    // ─────────────────────────────────────────────
-    // Cenário 2: clienteId ausente → 400
-    // ─────────────────────────────────────────────
     @IsTest
     static void quandoClienteIdAusente_deveRetornar400() {
         String body = JSON.serialize(new Map<String, String>{
@@ -73,9 +60,6 @@ private class PedidoSuporteRestResourceTest {
         assertRespostaContemErro('"clienteId" é obrigatório');
     }
 
-    // ─────────────────────────────────────────────
-    // Cenário 3: clienteId com formato inválido → 400
-    // ─────────────────────────────────────────────
     @IsTest
     static void quandoClienteIdInvalido_deveRetornar400() {
         String body = JSON.serialize(new Map<String, String>{
@@ -94,9 +78,6 @@ private class PedidoSuporteRestResourceTest {
         assertRespostaContemErro('não é um Salesforce Id válido');
     }
 
-    // ─────────────────────────────────────────────
-    // Cenário 4: descricao ausente → 400
-    // ─────────────────────────────────────────────
     @IsTest
     static void quandoDescricaoAusente_deveRetornar400() {
         Account conta = [SELECT Id FROM Account LIMIT 1];
@@ -116,9 +97,6 @@ private class PedidoSuporteRestResourceTest {
         assertRespostaContemErro('"descricao" é obrigatório');
     }
 
-    // ─────────────────────────────────────────────
-    // Cenário 5: prioridade ausente → 400
-    // ─────────────────────────────────────────────
     @IsTest
     static void quandoPrioridadeAusente_deveRetornar400() {
         Account conta = [SELECT Id FROM Account LIMIT 1];
@@ -138,9 +116,6 @@ private class PedidoSuporteRestResourceTest {
         assertRespostaContemErro('"prioridade" é obrigatório');
     }
 
-    // ─────────────────────────────────────────────
-    // Helpers
-    // ─────────────────────────────────────────────
     private static void configurarRestContext(String metodo, String body) {
         RestRequest req  = new RestRequest();
         req.httpMethod   = metodo;
